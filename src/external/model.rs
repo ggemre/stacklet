@@ -4,8 +4,8 @@ use crate::external::widget::{Widget};
 pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
     let mut widgets = Vec::new();
 
-    let input_regex = Regex::new(r"INPUT\((.*?)\)").unwrap();
-    let param_regex = Regex::new(r"(\w+)=(\S+)").unwrap();
+    let input_regex = Regex::new(r"INPUT\s*\((.*?)\)").unwrap();
+    let param_regex = Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
 
     for line in stdout.lines() {
