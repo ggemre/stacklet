@@ -13,6 +13,8 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
             let params_str = captures.get(1).unwrap().as_str();
             let mut max_width = 32;
             let mut filter = false;
+            let mut label = String::new();
+            let mut placeholder = String::new();
             let mut content = String::new();
 
             for param_match in param_regex.captures_iter(params_str) {
@@ -22,19 +24,27 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
                 match param {
                     "max_width" => max_width = value.parse().unwrap_or(32),
                     "filter" => filter = value.parse().unwrap_or(false),
+                    "label" => label = value.to_string(),
+                    "placeholder" => placeholder = value.to_string(),
                     "content" => content = value.to_string(),
                     _ => {}
                 }
             }
 
-            widgets.push(Widget::InputWidget {
+            widgets.push(Widget::Input { 
+                y: 0,
                 max_width,
                 filter,
+                label,
+                placeholder,
                 content,
             });
         } else if let Some(captures) = text_regex.captures(line) {
             let content: String = captures[1].to_string();
-            widgets.push(Widget::TextWidget { content });
+            widgets.push(Widget::Text { 
+                y: 0, 
+                content 
+            });
         }
     }
 

@@ -1,9 +1,8 @@
 use std::process::{Command, exit};
 use crate::external::model::parse_stdout;
-
 use crate::Widget;
 
-pub fn run_executable(path: &str) {
+pub fn run_executable(path: &str) -> Vec<Widget> {
     let output = Command::new("sh")
         .arg("-c")
         .arg(&path)
@@ -12,18 +11,7 @@ pub fn run_executable(path: &str) {
 
     if output.status.success() {
         let result = String::from_utf8_lossy(&output.stdout);
-        let model = parse_stdout(&result);
-
-        for widget in &model {
-            match widget {
-                Widget::InputWidget { content, .. } => {
-                    println!("Input: {}", content);
-                }
-                Widget::TextWidget { content } => {
-                    println!("Text: {}", content);
-                }
-            }
-        }
+        return parse_stdout(&result);
     } else {
         let error = String::from_utf8_lossy(&output.stderr);
         eprintln!("{}", error);

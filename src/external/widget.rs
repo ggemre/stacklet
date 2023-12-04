@@ -1,22 +1,16 @@
 #[derive(Debug)]
 pub enum Widget {
-    InputWidget { 
+    Input { 
+        y: usize,
         max_width: usize,
         filter: bool,
-        content: String, 
+        label: String,
+        placeholder: String,
+        content: String,
     },
-    TextWidget { content: String }
-}
-
-#[derive(Debug)]
-pub struct Input {
-    pub max_width: usize,
-    pub filter: bool,
-    pub content: String,
-}
-
-#[derive(Debug)]
-pub struct Text {
-    pub content: String,
+    Text { 
+        y: usize,
+        content: String,
+    },
 }
 
