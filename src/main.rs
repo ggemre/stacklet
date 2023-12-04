@@ -3,20 +3,42 @@ mod external {
     pub mod widget;
     pub mod model;
 }
+mod utils {
+    pub mod args;
+}
 use crate::external::widget::Widget;
+use std::process::exit;
 
 fn main() {
-    println!("Hello, world!");
-    external::exec::run_executable("./test.sh");
-    // let widgets = external::model::create_test();
-    // for widget in &widgets {
-    //     match widget {
-    //         Widget::InputWidget { content } => {
-    //             println!("Input: {}", content);
-    //         }
-    //         Widget::TextWidget { content } => {
-    //             println!("Text: {}", content);
-    //         }
-    //     }
-    // }
+    let args = utils::args::parse_args();
+    let exec_path: String ;
+
+    if args.help() {
+        utils::args::print_help();
+        exit(0);
+    } else if args.version() {
+        utils::args::print_version();
+        exit(0);
+    } else {
+        match args.exec_path() {
+            Some(path) => exec_path = (&path).to_string(),
+            None => {
+                println!("Error: Missing required argument -x/--exec");
+                utils::args::print_help();
+                exit(1);
+            }
+        }
+    }
+
+    let model = external::exec::run_executable(&exec_path);
+    for widget in model {
+        match widget {
+            Widget::Input { content, .. } => {
+                println!("Input: {}", content);
+            }
+            Widget::Text { content, .. } => {
+                println!("Text: {}", content);
+            }
+        }
+    }
 }
