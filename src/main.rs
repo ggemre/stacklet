@@ -10,6 +10,7 @@ mod interface {
     pub mod window;
 }
 use crate::external::widget::Widget;
+use crate::interface::window::BreakCondition;
 use std::process::exit;
 
 fn main() {
@@ -33,17 +34,29 @@ fn main() {
         }
     }
 
-    let mut model = external::exec::run_executable(&exec_path);
-    interface::window::init(&mut model);
+    let mut input = String::from("");
+    let mut input_content = String::from("");
+    let mut selection = String::from("");
+    let mut data = String::from("");
 
-    for widget in &model {
-        match widget {
-            Widget::Input { content, .. } => {
-                println!("Input: {}", content);
+    loop {
+        let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
+        data = new_data;
+
+        let (break_condition, y)= interface::window::init(&mut model);
+
+        if break_condition == BreakCondition::SELECTION {
+            if let Some(Widget::Text { content, .. }) = model.get(y) {
+                selection = content.to_string();
+                input = "".to_string();
             }
-            Widget::Text { content, .. } => {
-                println!("Text: {}", content);
+        } else if break_condition == BreakCondition::INPUT {
+            if let Some(Widget::Input { content, .. }) = model.get(y) {
+                selection = "".to_string();
+                input = content.to_string();
             }
+        } else if break_condition == BreakCondition::QUIT {
+            break;
         }
     }
 }

@@ -3,8 +3,8 @@ extern crate pancurses;
 use pancurses::*;
 use crate::Widget;
 
-#[derive(Debug)]
-enum BreakCondition {
+#[derive(Debug, PartialEq)]
+pub enum BreakCondition {
     QUIT,
     SELECTION,
     INPUT,
@@ -17,6 +17,8 @@ struct Cursor {
 }
 
 fn draw(window: &Window, model: &Vec<Widget>) {
+    window.clear();
+    
     for widget in model {
         match widget {
             Widget::Input { y, max_width, filter, label, placeholder, content } => {
@@ -30,9 +32,9 @@ fn draw(window: &Window, model: &Vec<Widget>) {
     window.refresh();
 }
 
-fn wait_for_input(window: &Window, model: &mut Vec<Widget>) {
+fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, usize) {
     let mut cursor = Cursor { x: 0, y: 0 };
-    let mut break_condition: BreakCondition;
+    let break_condition: BreakCondition;
     let limit = model.len() - 1;
 
     window.mv(cursor.y as i32, cursor.x as i32);
@@ -116,9 +118,10 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) {
     }
 
     endwin();
+    return (break_condition, cursor.y);
 }
 
-pub fn init(model: &mut Vec<Widget>) {
+pub fn init(model: &mut Vec<Widget>) -> (BreakCondition, usize) {
     let window = initscr();
     window.keypad(true);
     window.nodelay(true);
@@ -126,5 +129,5 @@ pub fn init(model: &mut Vec<Widget>) {
     noecho();
 
     draw(&window, &model);
-    wait_for_input(&window, model);
+    return wait_for_input(&window, model);
 }

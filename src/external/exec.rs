@@ -2,10 +2,14 @@ use std::process::{Command, exit};
 use crate::external::model::parse_stdout;
 use crate::Widget;
 
-pub fn run_executable(path: &str) -> Vec<Widget> {
+pub fn run_executable(path: &str, input: &str, input_content: &str, selection: &str, data: &str) -> (Vec<Widget>, String) {
     let output = Command::new("sh")
         .arg("-c")
         .arg(&path)
+        .env("INPUT", &input)
+        .env("INPUT_CONTENT", &input_content)
+        .env("SELECTION", &selection)
+        .env("DATA", &data)
         .output()
         .expect("Failed to run provided executable");
 

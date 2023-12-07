@@ -1,12 +1,14 @@
 use regex::Regex;
 use crate::external::widget::{Widget};
 
-pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
+pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
     let mut widgets = Vec::new();
+    let mut data = String::from("");
 
     let input_regex = Regex::new(r"INPUT\s*\((.*?)\)").unwrap();
     let param_regex = Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
+    let data_regex = Regex::new(r#"DATA\("(.*)"\)"#).unwrap();
 
     let mut level: usize = 0;
 
@@ -47,11 +49,15 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
                 y: level, 
                 content 
             });
+        } else if let Some(captures) = data_regex.captures(line) {
+            let content: String = captures[1].to_string();
+            data = content.clone();
+            level -= 1; // TODO: this is a temp fix for a later day...
         }
 
         level += 1;
     }
 
-    widgets
+    (widgets, data)
 }
 
