@@ -33,7 +33,9 @@ fn main() {
         }
     }
 
-    let model = external::exec::run_executable(&exec_path);
+    let mut model = external::exec::run_executable(&exec_path);
+    interface::window::init(&mut model);
+
     for widget in &model {
         match widget {
             Widget::Input { content, .. } => {
@@ -44,6 +46,4 @@ fn main() {
             }
         }
     }
-
-    interface::window::init(model);
 }

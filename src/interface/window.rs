@@ -30,7 +30,7 @@ fn draw(window: &Window, model: &Vec<Widget>) {
     window.refresh();
 }
 
-fn wait_for_input(window: &Window, model: Vec<Widget>) {
+fn wait_for_input(window: &Window, model: &mut Vec<Widget>) {
     let mut cursor = Cursor { x: 0, y: 0 };
     let mut break_condition: BreakCondition;
     let limit = model.len() - 1;
@@ -90,12 +90,26 @@ fn wait_for_input(window: &Window, model: Vec<Widget>) {
                     cursor.x -= 1;
                     window.mv(cursor.y as i32, cursor.x as i32);
                     window.delch();
+                    
+                    if let Some(widget) = model.get_mut(cursor.y) {
+                        if let Widget::Input { content, .. } = widget {
+                            content.remove(cursor.x);
+                        }
+                    }
                 }
             }
             Some(Input::Character(c)) => {
-                cursor.x += 1;
-                window.mvinsch(cursor.y as i32, (cursor.x - 1) as i32, c as chtype);
-                window.mv(cursor.y as i32, cursor.x as i32);
+                if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                    cursor.x += 1;
+                    window.mvinsch(cursor.y as i32, (cursor.x - 1) as i32, c as chtype);
+                    window.mv(cursor.y as i32, cursor.x as i32);
+
+                    if let Some(widget) = model.get_mut(cursor.y) {
+                        if let Widget::Input { content, .. } = widget {
+                            content.insert(cursor.x - 1, c);
+                        }
+                    }
+                }
             }
             _ => {}
         }
@@ -104,7 +118,7 @@ fn wait_for_input(window: &Window, model: Vec<Widget>) {
     endwin();
 }
 
-pub fn init(model: Vec<Widget>) {
+pub fn init(model: &mut Vec<Widget>) {
     let window = initscr();
     window.keypad(true);
     window.nodelay(true);
