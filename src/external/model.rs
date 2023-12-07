@@ -8,6 +8,8 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
     let param_regex = Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
 
+    let mut level: usize = 0;
+
     for line in stdout.lines() {
         if let Some(captures) = input_regex.captures(line) {
             let params_str = captures.get(1).unwrap().as_str();
@@ -32,7 +34,7 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
             }
 
             widgets.push(Widget::Input { 
-                y: 0,
+                y: level,
                 max_width,
                 filter,
                 label,
@@ -42,10 +44,12 @@ pub fn parse_stdout(stdout: &str) -> Vec<Widget> {
         } else if let Some(captures) = text_regex.captures(line) {
             let content: String = captures[1].to_string();
             widgets.push(Widget::Text { 
-                y: 0, 
+                y: level, 
                 content 
             });
         }
+
+        level += 1;
     }
 
     widgets

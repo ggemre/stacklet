@@ -6,6 +6,9 @@ mod external {
 mod utils {
     pub mod args;
 }
+mod interface {
+    pub mod window;
+}
 use crate::external::widget::Widget;
 use std::process::exit;
 
@@ -31,7 +34,7 @@ fn main() {
     }
 
     let model = external::exec::run_executable(&exec_path);
-    for widget in model {
+    for widget in &model {
         match widget {
             Widget::Input { content, .. } => {
                 println!("Input: {}", content);
@@ -41,4 +44,6 @@ fn main() {
             }
         }
     }
+
+    interface::window::init(model);
 }
