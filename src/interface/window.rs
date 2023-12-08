@@ -37,6 +37,10 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
     let break_condition: BreakCondition;
     let limit = model.len() - 1;
 
+    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+        cursor.x = content.len();
+    }
+
     window.mv(cursor.y as i32, cursor.x as i32);
 
     loop {
@@ -60,14 +64,26 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             Some(Input::KeyUp) => {
                 if cursor.y > 0 {
                     cursor.y -= 1;
-                    cursor.x = 0;
+
+                    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                        cursor.x = content.len();
+                    } else {
+                        cursor.x = 0;
+                    }
+
                     window.mv(cursor.y as i32, cursor.x as i32);
                 }
             }
             Some(Input::KeyDown) => {
                 if cursor.y < limit {
                     cursor.y += 1;
-                    cursor.x = 0;
+
+                    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                        cursor.x = content.len();
+                    } else {
+                        cursor.x = 0;
+                    }
+
                     window.mv(cursor.y as i32, cursor.x as i32);
                 }
             }

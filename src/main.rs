@@ -41,7 +41,10 @@ fn main() {
 
     loop {
         let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
-        data = new_data;
+
+        if !new_data.is_empty() {
+            data = new_data;
+        }
 
         let (break_condition, y)= interface::window::init(&mut model);
 
@@ -58,5 +61,14 @@ fn main() {
         } else if break_condition == BreakCondition::QUIT {
             break;
         }
+
+        input_content = model
+            .iter()
+            .filter_map(|widget| match widget {
+                Widget::Input { content, .. } => Some(content.clone()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join(":");
     }
 }
