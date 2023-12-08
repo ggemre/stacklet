@@ -71,4 +71,6 @@ fn main() {
             .collect::<Vec<_>>()
             .join(":");
     }
+
+    interface::window::destroy();
 }

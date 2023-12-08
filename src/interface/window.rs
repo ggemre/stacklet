@@ -16,6 +16,14 @@ struct Cursor {
     y: usize,
 }
 
+static mut WINDOW: Option<Window> = None;
+
+fn get_window() -> &'static mut Window {
+    unsafe {
+        WINDOW.get_or_insert_with(|| initscr())
+    }
+}
+
 fn draw(window: &Window, model: &Vec<Widget>) {
     window.clear();
     
@@ -133,12 +141,11 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
         }
     }
 
-    endwin();
     return (break_condition, cursor.y);
 }
 
 pub fn init(model: &mut Vec<Widget>) -> (BreakCondition, usize) {
-    let window = initscr();
+    let window = get_window();
     window.keypad(true);
     window.nodelay(true);
     window.timeout(0);
@@ -146,4 +153,14 @@ pub fn init(model: &mut Vec<Widget>) -> (BreakCondition, usize) {
 
     draw(&window, &model);
     return wait_for_input(&window, model);
+}
+
+pub fn update(model: &mut Vec<Widget>) -> (BreakCondition, usize) {
+    let window = get_window();
+    draw(&window, &model);
+    return wait_for_input(&window, model);
+}
+
+pub fn destroy() {
+    endwin();
 }
