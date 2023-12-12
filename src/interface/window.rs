@@ -2,6 +2,7 @@ extern crate pancurses;
 
 use pancurses::*;
 use crate::external::widget::{Filter, Widget};
+use crate::utils::fuzzy::fuzzy_match;
 
 #[derive(Debug, PartialEq)]
 pub enum BreakCondition {
@@ -24,25 +25,10 @@ fn get_window() -> &'static mut Window {
     }
 }
 
-static mut FILTERED_INDICES: Vec<usize> = Vec::new();
-
-fn get_filtered_indices() -> &'static mut Vec<usize> {
-    unsafe {
-        &mut FILTERED_INDICES
-    }
-}
-
-fn set_filtered_indices(indices: Vec<usize>) {
-    unsafe {
-        FILTERED_INDICES = indices;
-    }
-}
-
 fn draw(window: &Window, model: &mut Vec<Widget>) {
     let left_margin: usize = 2;
     let mut current_level: usize = 0;
 
-    // BEGIN DEBUGGING
     window.clear();
     for widget in model {
         match widget {
@@ -61,7 +47,37 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
         }
         current_level += 1;
     }
-    // END DEBUGGING
+}
+
+fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
+    for widget in model {
+        match widget {
+            Widget::Input { .. } => {}
+            Widget::Text { content: widget_content, show, .. } => {
+                let content_lower = content.to_lowercase();
+                let widget_content_lower = widget_content.to_lowercase();
+
+                if filter == Filter::Off || content_lower.is_empty() {
+                    *show = true;
+                    continue;
+                } else if filter == Filter::Exact {
+                    if *show && !widget_content_lower.contains(&content_lower) {
+                        *show = false;
+                    } else if !*show && widget_content_lower.contains(&content_lower) {
+                        *show = true;
+                    }
+                    continue;
+                } else if filter == Filter::Fuzzy {
+                    if *show && !fuzzy_match(&content_lower, &widget_content_lower) && !widget_content_lower.contains(&content_lower) {
+                        *show = false;
+                    } else if !*show && (fuzzy_match(&content_lower, &widget_content_lower) || widget_content_lower.contains(&content_lower)) {
+                        *show = true;
+                    }
+                    continue;
+                }
+            }
+        }
+    }
 }
 
 fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, usize) {
@@ -69,8 +85,6 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
     let break_condition: BreakCondition;
     let limit = model.len() - 1;
     let left_margin: usize = 2;
-
-    let mut filtered_levels = get_filtered_indices();
 
     if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
         cursor.x = content.len();
@@ -161,33 +175,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                         }
                     }
 
-                    // BEGIN DEBUGGING
                     content.remove(cursor.x);
-                    for widget in &mut *model {
-                        if let Widget::Text { content: widget_content, show, .. } = widget {
-                            // if filter is Filter::Off, then show all text widgets
-                            if filter == Filter::Off {
-                                *show = true;
-                                continue;
-                            } else if filter == Filter::Exact {
-                                if *show && !(*widget_content).contains(&content) {
-                                    *show = false;
-                                } else if !*show && (*widget_content).contains(&content) {
-                                    *show = true;
-                                }
-                                continue;
-                            } else if filter == Filter::Fuzzy {
-                                if *show && *widget_content != content {
-                                    *show = false;
-                                } else if !*show && *widget_content == content {
-                                    *show = true;
-                                }
-                                continue;
-                            }
-                        }
-                    }
+                    filter_widgets(model, filter, &content);
                     draw(window, model);
-                    // END DEBUGGING
                 }
             }
             Some(Input::Character(c)) => {
@@ -204,7 +194,6 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
 
                 window.mvinsch(cursor.y as i32, (cursor.x + left_margin) as i32, c as chtype);
                 cursor.x += 1;
-                // window.mv(cursor.y as i32, cursor.x as i32);
 
                 if let Some(widget) = model.get_mut(current_level) {
                     if let Widget::Input { content: widget_content, .. } = widget {
@@ -212,33 +201,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
 
-                // BEGIN DEBUGGING
                 content.insert(cursor.x - 1, c);
-                for widget in &mut *model {
-                    if let Widget::Text { content: widget_content, show, .. } = widget {
-                        // if filter is Filter::Off, then show all text widgets
-                        if filter == Filter::Off {
-                            *show = true;
-                            continue;
-                        } else if filter == Filter::Exact {
-                            if *show && !(*widget_content).contains(&content) {
-                                *show = false;
-                            } else if !*show && (*widget_content).contains(&content) {
-                                *show = true;
-                            }
-                            continue;
-                        } else if filter == Filter::Fuzzy {
-                            if *show && *widget_content != content {
-                                *show = false;
-                            } else if !*show && *widget_content == content {
-                                *show = true;
-                            }
-                            continue;
-                        }
-                    }
-                }
+                filter_widgets(model, filter, &content);
                 draw(window, model);
-                // END DEBUGGING
                 
             }
             _ => {}
@@ -259,7 +224,6 @@ pub fn init(model: &mut Vec<Widget>) -> (BreakCondition, usize) {
     noecho();
     curs_set(1);
 
-    // draw(&window, &model);
     return wait_for_input(&window, model);
 }
 

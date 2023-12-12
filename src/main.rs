@@ -5,6 +5,7 @@ mod external {
 }
 mod utils {
     pub mod args;
+    pub mod fuzzy;
 }
 mod interface {
     pub mod window;
