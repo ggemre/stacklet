@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::external::widget::{Widget};
+use crate::external::widget::{Filter, Widget};
 
 pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
     let mut widgets = Vec::new();
@@ -16,7 +16,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
         if let Some(captures) = input_regex.captures(line) {
             let params_str = captures.get(1).unwrap().as_str();
             let mut max_width = 32;
-            let mut filter = false;
+            let mut filter = Filter::Off;
             let mut label = String::new();
             let mut placeholder = String::new();
             let mut content = String::new();
@@ -27,7 +27,10 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
 
                 match param {
                     "max_width" => max_width = value.parse().unwrap_or(32),
-                    "filter" => filter = value.parse().unwrap_or(false),
+                    "filter" => filter = value.parse().unwrap_or_else(|_| {
+                        eprintln!("Invalid filter value: {}", &value.to_string());
+                        std::process::exit(1); // TODO: add error utils module
+                    }),
                     "label" => label = value.to_string(),
                     "placeholder" => placeholder = value.to_string(),
                     "content" => content = value.to_string(),
@@ -47,7 +50,8 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             let content: String = captures[1].to_string();
             widgets.push(Widget::Text { 
                 y: level, 
-                content 
+                content,
+                show: true,
             });
         } else if let Some(captures) = data_regex.captures(line) {
             let content: String = captures[1].to_string();
