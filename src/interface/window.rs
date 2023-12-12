@@ -32,15 +32,16 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
     window.clear();
     for widget in model {
         match widget {
-            Widget::Input { y, max_width, filter, label, placeholder, content } => {
+            Widget::Input { y, content, .. } => {
                 window.mvprintw(current_level as i32, left_margin as i32, &content);
                 *y = current_level;
             }
-            Widget::Text { y, content, show } => {
+            Widget::Text { y, content, show, id, .. } => {
                 if (*show) {
-                    window.mvprintw(current_level as i32, left_margin as i32, &content);
+                    window.mvprintw(current_level as i32, left_margin as i32, format!("{} {}", id, content));
                     *y = current_level;
                 } else {
+                    *y = usize::MAX;
                     current_level -= 1; // TODO: temp fix for now
                 }
             }
@@ -82,9 +83,10 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
 
 fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, usize) {
     let mut cursor = Cursor { x: 0, y: 0 };
-    let break_condition: BreakCondition;
+    let mut break_condition: BreakCondition;
     let limit = model.len() - 1;
     let left_margin: usize = 2;
+    let mut current_widget: usize = 0;
 
     if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
         cursor.x = content.len();
@@ -103,11 +105,29 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             }
             Some(Input::KeyEnter) |
             Some(Input::Character('\n')) => {
-                if matches!(model.get(cursor.y), Some(Widget::Input { .. })) {
-                    break_condition = BreakCondition::INPUT;
-                } else {
-                    break_condition = BreakCondition::SELECTION;
+                // set current_widget to id of widget at cursor.y
+                // if current_widget is input, break_condition = BreakCondition::INPUT
+                // else break_condition = BreakCondition::SELECTION
+
+                break_condition = BreakCondition::QUIT;
+                for widget in model {
+                    match widget {
+                        Widget::Input { y, id, .. } if *y == cursor.y => {
+                            current_widget = *id;
+                            break_condition = BreakCondition::INPUT;
+                            break;
+                        }
+                        Widget::Text { y, id, .. } if *y == cursor.y => {
+                            current_widget = *id;
+                            break_condition = BreakCondition::SELECTION;
+                            break;
+                        }
+                        _ => {
+                            break_condition = BreakCondition::QUIT;
+                        },
+                    }
                 }
+
                 break;
             }
             Some(Input::KeyUp) => {
@@ -213,7 +233,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
         window.refresh();
     }
 
-    return (break_condition, cursor.y);
+    return (break_condition, current_widget);
 }
 
 pub fn init(model: &mut Vec<Widget>) -> (BreakCondition, usize) {

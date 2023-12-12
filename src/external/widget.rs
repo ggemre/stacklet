@@ -29,11 +29,13 @@ pub enum Widget {
         label: String,
         placeholder: String,
         content: String,
+        id: usize,
     },
     Text { 
         y: usize,
         content: String,
         show: bool,
+        id: usize,
     },
 }
 

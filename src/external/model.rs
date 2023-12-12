@@ -11,6 +11,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
     let data_regex = Regex::new(r#"DATA\("(.*)"\)"#).unwrap();
 
     let mut level: usize = 0;
+    let mut unique_id: usize = 0;
 
     for line in stdout.lines() {
         if let Some(captures) = input_regex.captures(line) {
@@ -45,6 +46,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
                 label,
                 placeholder,
                 content,
+                id: unique_id,
             });
         } else if let Some(captures) = text_regex.captures(line) {
             let content: String = captures[1].to_string();
@@ -52,6 +54,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
                 y: level, 
                 content,
                 show: true,
+                id: unique_id,
             });
         } else if let Some(captures) = data_regex.captures(line) {
             let content: String = captures[1].to_string();
@@ -60,6 +63,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
         }
 
         level += 1;
+        unique_id += 1;
     }
 
     (widgets, data)

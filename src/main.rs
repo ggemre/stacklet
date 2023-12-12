@@ -39,6 +39,7 @@ fn main() {
     let mut input_content = String::from("");
     let mut selection = String::from("");
     let mut data = String::from("");
+    let mut DEBUG_DATA: usize = 0;
 
     loop {
         let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
@@ -47,15 +48,15 @@ fn main() {
             data = new_data;
         }
 
-        let (break_condition, y)= interface::window::init(&mut model);
+        let (break_condition, match_id)= interface::window::init(&mut model);
 
         if break_condition == BreakCondition::SELECTION {
-            if let Some(Widget::Text { content, .. }) = model.get(y) {
+            if let Some(Widget::Text { content, .. }) = model.get(match_id) {
                 selection = content.to_string();
                 input = "".to_string();
             }
         } else if break_condition == BreakCondition::INPUT {
-            if let Some(Widget::Input { content, .. }) = model.get(y) {
+            if let Some(Widget::Input { content, .. }) = model.get(match_id) {
                 selection = "".to_string();
                 input = content.to_string();
             }
