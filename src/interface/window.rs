@@ -36,9 +36,9 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
                 window.mvprintw(current_level as i32, left_margin as i32, &content);
                 *y = current_level;
             }
-            Widget::Text { y, content, show, id, .. } => {
+            Widget::Text { y, content, show, .. } => {
                 if (*show) {
-                    window.mvprintw(current_level as i32, left_margin as i32, format!("{} {}", id, content));
+                    window.mvprintw(current_level as i32, left_margin as i32, &content);
                     *y = current_level;
                 } else {
                     *y = usize::MAX;

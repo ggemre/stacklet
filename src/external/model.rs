@@ -60,6 +60,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             let content: String = captures[1].to_string();
             data = content.clone();
             level -= 1; // TODO: this is a temp fix for a later day...
+            unique_id -= 1;
         }
 
         level += 1;
