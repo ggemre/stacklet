@@ -53,8 +53,8 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
     window.clear();
     for widget in model {
         match widget {
-            Widget::Input { y, content, .. } => {
-                window.mvprintw(current_level, left_margin as i32, &content);
+            Widget::Input { y, content, label, .. } => {
+                window.mvprintw(current_level, left_margin as i32, &format!("{}{}", label, content));
                 *y = current_level;
             }
             Widget::Text { y, content, show, .. } => {
@@ -111,8 +111,8 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
     let mut current_widget: usize = 0;
     let height = window.get_max_y() as usize;
 
-    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
-        cursor.x = content.len();
+    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+        cursor.x = content.len() + label.len();
     }
 
     window.mv(cursor.y as i32, cursor.x as i32);
@@ -165,9 +165,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.mvprintw(cursor.y as i32, 0, " ");
                     cursor.y -= 1;
 
-                    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
                         curs_set(1);
-                        cursor.x = content.len();
+                        cursor.x = content.len() + label.len();
                     } else {
                         curs_set(0);
                         window.mvprintw(cursor.y as i32, 0, ">");
@@ -186,9 +186,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                         limit -= 1;
                     }
 
-                    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
                         curs_set(1);
-                        cursor.x = content.len();
+                        cursor.x = content.len() + label.len();
                     } else {
                         curs_set(0);
                         window.mvprintw(cursor.y as i32, 0, ">");
@@ -196,13 +196,15 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 }
             }
             Some(Input::KeyLeft) => {
-                if cursor.x > 0 && matches!(find_widget_by_y(model, cursor.y as i32), Some(Widget::Input { .. })) {
-                    cursor.x -= 1;
+                if let Some(Widget::Input { label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if cursor.x > label.len() {
+                        cursor.x -= 1;
+                    }
                 }
             }
             Some(Input::KeyRight) => {
-                if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
-                    if cursor.x < content.len() {
+                if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if cursor.x < content.len() + label.len() {
                         cursor.x += 1;
                     }
                 }
@@ -212,6 +214,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             Some(Input::Character('\u{7f}')) => {
                 let mut content;
                 let filter;
+                let mut label_len = 0;
                 // let current_level = cursor.y;
 
                 if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
@@ -227,12 +230,13 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.delch();
                     
                     if let Some(widget) = find_widget_by_y_mut(model, cursor.y as i32) {
-                        if let Widget::Input { content: widget_content, .. } = widget {
-                            widget_content.remove(cursor.x);
+                        if let Widget::Input { content: widget_content, label, .. } = widget {
+                            label_len = label.len();
+                            widget_content.remove(cursor.x - label_len);
                         }
                     }
 
-                    content.remove(cursor.x);
+                    content.remove(cursor.x - label_len);
                     filter_widgets(model, filter, &content);
                     draw(window, model);
                 }
@@ -241,6 +245,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 let mut content;
                 let filter;
                 let current_level = cursor.y;
+                let mut label_len = 0;
                 
                 if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
                     content = ref_content.clone();
@@ -253,12 +258,13 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 cursor.x += 1;
 
                 if let Some(widget) = find_widget_by_y_mut(model, current_level as i32) {
-                    if let Widget::Input { content: widget_content, .. } = widget {
-                        widget_content.insert(cursor.x - 1, c);
+                    if let Widget::Input { content: widget_content, label, .. } = widget {
+                        label_len = label.len();
+                        widget_content.insert(cursor.x - label_len - 1, c);
                     }
                 }
 
-                content.insert(cursor.x - 1, c);
+                content.insert(cursor.x - label_len - 1, c);
                 filter_widgets(model, filter, &content);
                 draw(window, model);
                 

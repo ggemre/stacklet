@@ -44,6 +44,10 @@ fn main() {
     loop {
         let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
 
+        if model.is_empty() {
+            break;
+        }
+
         if !new_data.is_empty() {
             data = new_data;
         }

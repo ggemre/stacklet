@@ -61,6 +61,9 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             data = content.clone();
             level -= 1; // TODO: this is a temp fix for a later day...
             unique_id -= 1;
+        } else if line == "QUIT()" {
+            widgets.clear();
+            break;
         }
 
         level += 1;
