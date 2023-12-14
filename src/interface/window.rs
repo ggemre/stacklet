@@ -3,6 +3,7 @@ extern crate pancurses;
 use pancurses::*;
 use crate::external::widget::{Filter, Widget};
 use crate::utils::fuzzy::fuzzy_match;
+use crate::utils::helpers::{find_widget_by_y, find_widget_by_y_mut};
 
 #[derive(Debug, PartialEq)]
 pub enum BreakCondition {
@@ -25,23 +26,43 @@ fn get_window() -> &'static mut Window {
     }
 }
 
+static mut SCROLL_OFFSET: i32 = 0;
+
+fn get_scroll_offset() -> &'static i32 {
+    unsafe {
+        &SCROLL_OFFSET
+    }
+}
+
+fn reset_scroll_offset() {
+    unsafe {
+        SCROLL_OFFSET = 0;
+    }
+}
+
+fn scroll(inc: i32) {
+    unsafe {
+        SCROLL_OFFSET += inc;
+    }
+}
+
 fn draw(window: &Window, model: &mut Vec<Widget>) {
-    let left_margin: usize = 2;
-    let mut current_level: usize = 0;
+    let left_margin: i32 = 2;
+    let mut current_level: i32 = *get_scroll_offset();
 
     window.clear();
     for widget in model {
         match widget {
             Widget::Input { y, content, .. } => {
-                window.mvprintw(current_level as i32, left_margin as i32, &content);
+                window.mvprintw(current_level, left_margin as i32, &content);
                 *y = current_level;
             }
             Widget::Text { y, content, show, .. } => {
-                if (*show) {
-                    window.mvprintw(current_level as i32, left_margin as i32, &content);
+                if *show {
+                    window.mvprintw(current_level, left_margin as i32, &content);
                     *y = current_level;
                 } else {
-                    *y = usize::MAX;
+                    *y = -1;
                     current_level -= 1; // TODO: temp fix for now
                 }
             }
@@ -83,12 +104,14 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
 
 fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, usize) {
     let mut cursor = Cursor { x: 0, y: 0 };
+    reset_scroll_offset();
     let mut break_condition: BreakCondition;
-    let limit = model.len() - 1;
+    let mut limit = model.len() - 1;
     let left_margin: usize = 2;
     let mut current_widget: usize = 0;
+    let height = window.get_max_y() as usize;
 
-    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
         cursor.x = content.len();
     }
 
@@ -112,12 +135,12 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 break_condition = BreakCondition::QUIT;
                 for widget in model {
                     match widget {
-                        Widget::Input { y, id, .. } if *y == cursor.y => {
+                        Widget::Input { y, id, .. } if *y == (cursor.y as i32) => {
                             current_widget = *id;
                             break_condition = BreakCondition::INPUT;
                             break;
                         }
-                        Widget::Text { y, id, .. } if *y == cursor.y => {
+                        Widget::Text { y, id, .. } if *y == (cursor.y as i32) => {
                             current_widget = *id;
                             break_condition = BreakCondition::SELECTION;
                             break;
@@ -131,11 +154,18 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 break;
             }
             Some(Input::KeyUp) => {
+                if *get_scroll_offset() < 0 && cursor.y == 0 {
+                    scroll(1);
+                    draw(window, model);
+                    cursor.y = 1;
+                    limit += 1;
+                }
+
                 if cursor.y > 0 {
                     window.mvprintw(cursor.y as i32, 0, " ");
                     cursor.y -= 1;
 
-                    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
                         curs_set(1);
                         cursor.x = content.len();
                     } else {
@@ -149,7 +179,14 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.mvprintw(cursor.y as i32, 0, " ");
                     cursor.y += 1;
 
-                    if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                    if cursor.y > height - 1 {
+                        scroll(-1);
+                        draw(window, model);
+                        cursor.y -= 1;
+                        limit -= 1;
+                    }
+
+                    if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
                         curs_set(1);
                         cursor.x = content.len();
                     } else {
@@ -159,12 +196,12 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 }
             }
             Some(Input::KeyLeft) => {
-                if cursor.x > 0 && matches!(model.get(cursor.y), Some(Widget::Input { .. })) {
+                if cursor.x > 0 && matches!(find_widget_by_y(model, cursor.y as i32), Some(Widget::Input { .. })) {
                     cursor.x -= 1;
                 }
             }
             Some(Input::KeyRight) => {
-                if let Some(Widget::Input { content, .. }) = model.get(cursor.y) {
+                if let Some(Widget::Input { content, .. }) = find_widget_by_y(model, cursor.y as i32) {
                     if cursor.x < content.len() {
                         cursor.x += 1;
                     }
@@ -175,9 +212,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             Some(Input::Character('\u{7f}')) => {
                 let mut content;
                 let filter;
-                let current_level = cursor.y;
+                // let current_level = cursor.y;
 
-                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = model.get(cursor.y).cloned() {
+                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
                     content = ref_content.clone();
                     filter = ref_filter.clone();
                 } else {
@@ -189,7 +226,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.mv(cursor.y as i32, (cursor.x + left_margin) as i32);
                     window.delch();
                     
-                    if let Some(widget) = model.get_mut(cursor.y) {
+                    if let Some(widget) = find_widget_by_y_mut(model, cursor.y as i32) {
                         if let Widget::Input { content: widget_content, .. } = widget {
                             widget_content.remove(cursor.x);
                         }
@@ -205,7 +242,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 let filter;
                 let current_level = cursor.y;
                 
-                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = model.get(cursor.y).cloned() {
+                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
                     content = ref_content.clone();
                     filter = ref_filter.clone();
                 } else {
@@ -215,7 +252,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 window.mvinsch(cursor.y as i32, (cursor.x + left_margin) as i32, c as chtype);
                 cursor.x += 1;
 
-                if let Some(widget) = model.get_mut(current_level) {
+                if let Some(widget) = find_widget_by_y_mut(model, current_level as i32) {
                     if let Widget::Input { content: widget_content, .. } = widget {
                         widget_content.insert(cursor.x - 1, c);
                     }

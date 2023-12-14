@@ -6,6 +6,7 @@ mod external {
 mod utils {
     pub mod args;
     pub mod fuzzy;
+    pub mod helpers;
 }
 mod interface {
     pub mod window;
@@ -39,7 +40,6 @@ fn main() {
     let mut input_content = String::from("");
     let mut selection = String::from("");
     let mut data = String::from("");
-    let mut DEBUG_DATA: usize = 0;
 
     loop {
         let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);

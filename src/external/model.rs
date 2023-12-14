@@ -10,7 +10,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
     let data_regex = Regex::new(r#"DATA\("(.*)"\)"#).unwrap();
 
-    let mut level: usize = 0;
+    let mut level: i32 = 0;
     let mut unique_id: usize = 0;
 
     for line in stdout.lines() {
@@ -64,7 +64,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
         }
 
         level += 1;
-        unique_id += 1;
+        unique_id += 1; // TODO: remove id & just use index
     }
 
     (widgets, data)
