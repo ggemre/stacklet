@@ -21,41 +21,40 @@ impl Args {
     }
 }
 
-// Function to parse command-line arguments and return an instance of Args
+/// Parse command-line arguments and return an instance of Args
 pub fn parse_args() -> Args {
-    // Get the command-line arguments without the program name
+    // get cli args without the program name
     let args: Vec<String> = env::args().skip(1).collect();
 
-    // Define default values for optional arguments
+    // initialize default values for optional arguments
     let mut help = false;
     let mut version = false;
     let mut exec_path: Option<String> = None;
 
-    // Parse command-line arguments
+    // iterate through args and match up with known options
     let mut iter = args.iter().peekable();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
             "-h" | "--help" => help = true,
             "-v" | "--version" => version = true,
             "-x" | "--exec" => {
-                // Check if the next argument is available
+                // check if the next argument is available
                 if let Some(path) = iter.next() {
                     exec_path = Some(path.clone());
                 } else {
                     println!("Error: Missing argument for -x/--exec");
-                    print_help(); // Assuming a function to print help
+                    print_help();
                     std::process::exit(1);
                 }
             }
             _ => {
                 println!("Error: Unknown argument '{}'", arg);
-                print_help(); // Assuming a function to print help
+                print_help();
                 std::process::exit(1);
             }
         }
     }
 
-    // Return an instance of Args with parsed values
     Args {
         help,
         version,
@@ -63,6 +62,7 @@ pub fn parse_args() -> Args {
     }
 }
 
+/// Print the program help message.
 pub fn print_help() {
     println!("Usage:");
     println!("  -h, --help      Print help message and quit");
@@ -70,7 +70,7 @@ pub fn print_help() {
     println!("  -x, --exec      Path to executable (required)");
 }
 
-// Example function to print program version
+/// Print the program version.
 pub fn print_version() {
     println!("Program version: 1.0");
 }
