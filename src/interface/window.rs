@@ -274,35 +274,39 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
 
                 let mut content;
                 let filter;
-                let mut label_len = 0;
+                let label_len;
 
-                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
+                if let Some(Widget::Input { content: ref_content, filter: ref_filter, label, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
                     // current row is input, get its content and filter type
                     content = ref_content.clone();
                     filter = ref_filter.clone();
+                    label_len = label.len();
                 } else {
                     // current row is text, nothing to backspace so skip
                     continue;
                 }
 
-                if cursor.x > 0 { // TODO: may need to be label len
+                if cursor.x > label_len { // TODO: may need to be label len
                     // move cursor 1 cell and delete current character
                     cursor.x -= 1;
                     window.mv(cursor.y as i32, (cursor.x + left_margin) as i32);
                     window.delch();
                     
                     if let Some(widget) = find_widget_by_y_mut(model, cursor.y as i32) {
-                        if let Widget::Input { content: widget_content, label, .. } = widget {
+                        if let Widget::Input { content: widget_content, .. } = widget {
                             // remove same character from widget's content property
-                            label_len = label.len();
+                            // label_len = label.len();
                             widget_content.remove(cursor.x - label_len);
                         }
                     }
 
-                    // run filter since input content has changed
                     content.remove(cursor.x - label_len);
-                    filter_widgets(model, filter, &content);
-                    draw(window, model);
+
+                    if filter != Filter::Off {
+                        // input widget has a filter, apply it
+                        filter_widgets(model, filter, &content);
+                        draw(window, model);
+                    }
                 }
             }
             Some(Input::Character(c)) => {
@@ -334,10 +338,13 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
 
-                // run filter since input content has changed
                 content.insert(cursor.x - label_len - 1, c);
-                filter_widgets(model, filter, &content);
-                draw(window, model);
+
+                if filter != Filter::Off {
+                    // input widget has a filter, apply it
+                    filter_widgets(model, filter, &content);
+                    draw(window, model);
+                }
                 
             }
             _ => {}
