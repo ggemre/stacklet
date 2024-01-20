@@ -2,6 +2,8 @@ use std::process::{Command, exit};
 use crate::external::model::parse_stdout;
 use crate::Widget;
 
+use fork::{daemon, Fork};
+
 /// Run provided executable with the provided environment and parse the stdout.
 ///
 /// Takes a path for the executable and runs via `sh` with the provided runtime variables.
@@ -29,9 +31,17 @@ pub fn run_executable(path: &str, input: &str, input_content: &str, selection: &
 }
 
 pub fn spawn_detached_child(command: &str) {
-    Command::new("sh")
-        .arg("-c")
-        .arg(&command)
-        .spawn()
-        .expect("Failed to launch subprocess");
+    // Command::new("sh")
+    //     .arg("-c")
+    //     .arg(&command)
+    //     .spawn()
+    //     .expect("Failed to launch subprocess")
+
+    if let Ok(Fork::Child) = daemon(false, false) {
+        Command::new("sh")
+            .arg("-c")
+            .arg(&command)
+            .spawn()
+            .expect("Failed to launch subprocess");
+    }
 }
