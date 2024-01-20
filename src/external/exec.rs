@@ -8,7 +8,7 @@ use crate::Widget;
 /// Takes the stdout of the executable and passes to `external::model::parse_stdout` to generate the model
 /// and new runtime variables.
 pub fn run_executable(path: &str, input: &str, input_content: &str, selection: &str, data: &str) -> (Vec<Widget>, String) {
-    let output = Command::new("sh")
+    let output = Command::new("sh") // TODO: use sh to launch for both or raw for both?...
         .arg("-c")
         .arg(&path)
         .env("INPUT", &input)
@@ -26,4 +26,12 @@ pub fn run_executable(path: &str, input: &str, input_content: &str, selection: &
         eprintln!("{}", error);
         exit(1);
     }
+}
+
+pub fn spawn_detached_child(command: &str) {
+    Command::new("sh")
+        .arg("-c")
+        .arg(&command)
+        .spawn()
+        .expect("Failed to launch subprocess");
 }

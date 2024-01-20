@@ -1,5 +1,6 @@
 use regex::Regex;
 use crate::external::widget::{Filter, Widget};
+use crate::external::exec;
 
 /// Generate the model, (vector of ui widgets), and runtime data from the stdout of executable.
 ///
@@ -30,6 +31,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
     let param_regex = Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
     let data_regex = Regex::new(r#"DATA\("(.*)"\)"#).unwrap();
+    let quit_regex = Regex::new(r#"QUIT\("([^"]*)"\)"#).unwrap();
 
     let mut level: i32 = 0;
     let mut unique_id: usize = 0;
@@ -90,8 +92,12 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             data = content.clone();
             level -= 1; // TODO: this is a temp fix for a later day...
             unique_id -= 1;
-        } else if line == "QUIT()" {
+        } else if let Some(captures) = quit_regex.captures(line) {
             // found quit widget, clear the model and stop reading stdout
+            if let Some(content) = captures.get(1) {
+                let command = content.as_str().to_string();
+                exec::spawn_detached_child(&command);
+            }
             widgets.clear();
             break;
         }
