@@ -150,17 +150,18 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
     let mut current_widget: usize = 0;
     let height = window.get_max_y() as usize;
 
+    window.mv(cursor.y as i32, cursor.x as i32);
+
+    draw(window, model);
+
     if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
         // starting widget is input, move cursor to end of its content
         cursor.x = content.len() + label.len();
     } else {
         // starting widget is text, hide the cursor
         curs_set(0);
+        window.mvprintw(0, 0, ">");
     }
-
-    window.mv(cursor.y as i32, cursor.x as i32);
-
-    draw(window, model);
 
     // main keyboard input loop
     loop {
