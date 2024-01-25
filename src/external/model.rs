@@ -12,12 +12,11 @@ use crate::external::exec;
 ///   <param> ::= <param_name> '=' <param_value>
 ///   <param_name> ::= [a-zA-Z_][a-zA-Z0-9_]*
 ///   <param_value> ::= '"' <string_content> '"'
+///   <text> ::= TEXT '(' '"' <string_content> '"' ')'
+///   <data> ::= DATA '(' '"' <string_content> '"' ')'
+///   <quit> ::= QUIT '(' ')' | QUIT '(' '"' <string_content> '"' ')'
 ///   <string_content> ::= [^"]*
-///   <text> ::= TEXT '(' '"' <text_content> '"' ')'
-///   <text_content> ::= [^"]*
-///   <data> ::= DATA '(' '"' <data_content> '"' ')'
-///   <data_content> ::= [^"]*
-///   <quit> ::= QUIT '(' ')'
+///
 /// ## Runtime data generation
 /// 
 /// Data is set by the DATA() widget and returned accordingly.
