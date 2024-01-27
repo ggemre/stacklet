@@ -6,8 +6,8 @@ pub fn exact_match(s1: &str, s2: &str) -> bool {
 /// Calculate the Levenshtein distance between strings s1 and s2.
 ///
 /// Copied from Wikipedia:
-///   > Informally, the Levenshtein distance between two words is the minimum number of 
-///   > single-character edits (insertions, deletions or substitutions) required to change 
+///   > Informally, the Levenshtein distance between two words is the minimum number of
+///   > single-character edits (insertions, deletions or substitutions) required to change
 ///   > one word into the other.
 /// https://en.wikipedia.org/wiki/Levenshtein_distance
 fn levenshtein_distance(s1: &str, s2: &str) -> usize {
@@ -56,7 +56,7 @@ pub fn fuzzy_match(s1: &str, s2: &str) -> bool {
     let distance = levenshtein_distance(s1, s2);
     let len1 = s1.chars().count();
     let len2 = s2.chars().count();
-    
+
     let ratio = 1.0 - (distance as f64 / (len1.max(len2) as f64));
 
     ratio >= threshold

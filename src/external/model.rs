@@ -1,6 +1,6 @@
-use regex::Regex;
-use crate::external::widget::{Filter, Widget};
 use crate::external::exec;
+use crate::external::widget::{Filter, Widget};
+use regex::Regex;
 
 /// Generate the model, (vector of ui widgets), and runtime data from the stdout of executable.
 ///
@@ -18,7 +18,7 @@ use crate::external::exec;
 ///   <string_content> ::= [^"]*
 ///
 /// ## Runtime data generation
-/// 
+///
 /// Data is set by the DATA() widget and returned accordingly.
 /// Since the program quits if no stdout is provided, QUIT() clears the model, (as if there was no stdout), and returns.
 pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
@@ -53,10 +53,12 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
                 // set parameter variable for each valid parameter
                 match param {
                     "max_width" => max_width = value.parse().unwrap_or(32),
-                    "filter" => filter = value.parse().unwrap_or_else(|_| {
-                        eprintln!("Invalid filter value: {}", &value.to_string());
-                        std::process::exit(1); // TODO: add error utils module
-                    }),
+                    "filter" => {
+                        filter = value.parse().unwrap_or_else(|_| {
+                            eprintln!("Invalid filter value: {}", &value.to_string());
+                            std::process::exit(1); // TODO: add error utils module
+                        })
+                    }
                     "label" => label = value.to_string(),
                     "placeholder" => placeholder = value.to_string(),
                     "content" => content = value.to_string(),
@@ -65,7 +67,7 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             }
 
             // add a new input widget to the model
-            widgets.push(Widget::Input { 
+            widgets.push(Widget::Input {
                 y: level,
                 max_width,
                 filter,
@@ -79,8 +81,8 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
             let content: String = captures[1].to_string();
 
             // add a new text widget to the model
-            widgets.push(Widget::Text { 
-                y: level, 
+            widgets.push(Widget::Text {
+                y: level,
                 content,
                 show: true,
                 id: unique_id,
@@ -107,4 +109,3 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
 
     (widgets, data)
 }
-

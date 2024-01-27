@@ -1,7 +1,7 @@
 mod external {
     pub mod exec;
-    pub mod widget;
     pub mod model;
+    pub mod widget;
 }
 mod utils {
     pub mod args;
@@ -19,7 +19,7 @@ use std::process::exit;
 fn main() {
     // parse commandline arguments
     let args = utils::args::parse_args();
-    let exec_path: String ;
+    let exec_path: String;
 
     if args.help() {
         utils::args::print_help();
@@ -46,7 +46,8 @@ fn main() {
 
     loop {
         // run provided executable and collect ui model (from stdout) and generated data
-        let (mut model, new_data) = external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
+        let (mut model, new_data) =
+            external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
 
         if model.is_empty() {
             // no stdout, end the app loop

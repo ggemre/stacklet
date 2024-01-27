@@ -1,9 +1,9 @@
 extern crate pancurses;
 
-use pancurses::*;
 use crate::external::widget::{Filter, Widget};
 use crate::utils::fuzzy::{exact_match, fuzzy_match};
 use crate::utils::helpers::{find_widget_by_y, find_widget_by_y_mut};
+use pancurses::*;
 
 #[derive(Debug, PartialEq)]
 pub enum BreakCondition {
@@ -24,13 +24,11 @@ static mut WINDOW: Option<Window> = None;
 /// Return the ncurses window if it exists, or initialize it.
 ///
 /// Operation is unsafe for 2 reasons:
-/// * accessing shared mutable state, (this will break if `get_window` is called asynchronously), 
+/// * accessing shared mutable state, (this will break if `get_window` is called asynchronously),
 ///   which it is not
 /// * foreign function interface, ("I'm responsible for ensuring the safety when interacting with this external C code")
 fn get_window() -> &'static mut Window {
-    unsafe {
-        WINDOW.get_or_insert_with(|| initscr())
-    }
+    unsafe { WINDOW.get_or_insert_with(|| initscr()) }
 }
 
 // holds vertical offset of aforementioned window
@@ -40,9 +38,7 @@ static mut SCROLL_OFFSET: i32 = 0;
 ///
 /// Operation is unsafe because it accesses shared mutable state, (so `get_scroll_offset` must only be called synchronously)
 fn get_scroll_offset() -> &'static i32 {
-    unsafe {
-        &SCROLL_OFFSET
-    }
+    unsafe { &SCROLL_OFFSET }
 }
 
 /// Set the scroll offset shared variable to 0.
@@ -69,12 +65,20 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
     window.clear();
     for widget in model {
         match widget {
-            Widget::Input { y, content, label, .. } => {
+            Widget::Input {
+                y, content, label, ..
+            } => {
                 // input widget found, write it, its label and content, (both default to "")
-                window.mvprintw(current_level, left_margin as i32, &format!("{}{}", label, content));
+                window.mvprintw(
+                    current_level,
+                    left_margin as i32,
+                    &format!("{}{}", label, content),
+                );
                 *y = current_level;
             }
-            Widget::Text { y, content, show, .. } => {
+            Widget::Text {
+                y, content, show, ..
+            } => {
                 // text widget found, write its content if its show property is `true`
                 if *show {
                     window.mvprintw(current_level, left_margin as i32, &content);
@@ -102,7 +106,11 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
     for widget in model {
         match widget {
             Widget::Input { .. } => {}
-            Widget::Text { content: widget_content, show, .. } => {
+            Widget::Text {
+                content: widget_content,
+                show,
+                ..
+            } => {
                 // widget is text, attempt to filter it
                 let content_lower = content.to_lowercase();
                 let widget_content_lower = widget_content.to_lowercase();
@@ -121,9 +129,15 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
                     continue;
                 } else if filter == Filter::Fuzzy {
                     // filter is fuzzy, hide/show widgets accordingly
-                    if *show && !fuzzy_match(&content_lower, &widget_content_lower) && !widget_content_lower.contains(&content_lower) {
+                    if *show
+                        && !fuzzy_match(&content_lower, &widget_content_lower)
+                        && !widget_content_lower.contains(&content_lower)
+                    {
                         *show = false;
-                    } else if !*show && (fuzzy_match(&content_lower, &widget_content_lower) || widget_content_lower.contains(&content_lower)) {
+                    } else if !*show
+                        && (fuzzy_match(&content_lower, &widget_content_lower)
+                            || widget_content_lower.contains(&content_lower))
+                    {
                         *show = true;
                     }
                     continue;
@@ -172,8 +186,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 break_condition = BreakCondition::QUIT;
                 break;
             }
-            Some(Input::KeyEnter) |
-            Some(Input::Character('\n')) => {
+            Some(Input::KeyEnter) | Some(Input::Character('\n')) => {
                 // enter/return pressed, prepare program to quit
                 break_condition = BreakCondition::QUIT;
 
@@ -193,7 +206,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                         }
                         _ => {
                             break_condition = BreakCondition::QUIT;
-                        },
+                        }
                     }
                 }
 
@@ -215,7 +228,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.mvprintw(cursor.y as i32, 0, " ");
                     cursor.y -= 1;
 
-                    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if let Some(Widget::Input { content, label, .. }) =
+                        find_widget_by_y(model, cursor.y as i32)
+                    {
                         // new row is input, show cursor at end of its content
                         curs_set(1);
                         cursor.x = content.len() + label.len();
@@ -241,7 +256,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                         limit -= 1;
                     }
 
-                    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                    if let Some(Widget::Input { content, label, .. }) =
+                        find_widget_by_y(model, cursor.y as i32)
+                    {
                         // new row is input, show cursor at end of its content
                         curs_set(1);
                         cursor.x = content.len() + label.len();
@@ -254,7 +271,8 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             }
             Some(Input::KeyLeft) => {
                 // left arrow pressed, move cursor up to label 1 cell if row is input
-                if let Some(Widget::Input { label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                if let Some(Widget::Input { label, .. }) = find_widget_by_y(model, cursor.y as i32)
+                {
                     if cursor.x > label.len() {
                         cursor.x -= 1;
                     }
@@ -262,22 +280,28 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             }
             Some(Input::KeyRight) => {
                 // right arrow pressed, move cursor up to end to content 1 cell if row is input
-                if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+                if let Some(Widget::Input { content, label, .. }) =
+                    find_widget_by_y(model, cursor.y as i32)
+                {
                     if cursor.x < content.len() + label.len() {
                         cursor.x += 1;
                     }
                 }
             }
-            Some(Input::KeyBackspace) |
-            Some(Input::KeyDC) |
-            Some(Input::Character('\u{7f}')) => {
+            Some(Input::KeyBackspace) | Some(Input::KeyDC) | Some(Input::Character('\u{7f}')) => {
                 // backspace/delete pressed
 
                 let mut content;
                 let filter;
                 let label_len;
 
-                if let Some(Widget::Input { content: ref_content, filter: ref_filter, label, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
+                if let Some(Widget::Input {
+                    content: ref_content,
+                    filter: ref_filter,
+                    label,
+                    ..
+                }) = find_widget_by_y(model, cursor.y as i32).cloned()
+                {
                     // current row is input, get its content and filter type
                     content = ref_content.clone();
                     filter = ref_filter.clone();
@@ -287,14 +311,19 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     continue;
                 }
 
-                if cursor.x > label_len { // TODO: may need to be label len
+                if cursor.x > label_len {
+                    // TODO: may need to be label len
                     // move cursor 1 cell and delete current character
                     cursor.x -= 1;
                     window.mv(cursor.y as i32, (cursor.x + left_margin) as i32);
                     window.delch();
-                    
+
                     if let Some(widget) = find_widget_by_y_mut(model, cursor.y as i32) {
-                        if let Widget::Input { content: widget_content, .. } = widget {
+                        if let Widget::Input {
+                            content: widget_content,
+                            ..
+                        } = widget
+                        {
                             // remove same character from widget's content property
                             // label_len = label.len();
                             widget_content.remove(cursor.x - label_len);
@@ -312,13 +341,18 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
             }
             Some(Input::Character(c)) => {
                 // any other character was typed
-                
+
                 let mut content;
                 let filter;
                 let current_level = cursor.y;
                 let mut label_len = 0;
-                
-                if let Some(Widget::Input { content: ref_content, filter: ref_filter, .. }) = find_widget_by_y(model, cursor.y as i32).cloned() {
+
+                if let Some(Widget::Input {
+                    content: ref_content,
+                    filter: ref_filter,
+                    ..
+                }) = find_widget_by_y(model, cursor.y as i32).cloned()
+                {
                     // current row is input, get its content and filter type
                     content = ref_content.clone();
                     filter = ref_filter.clone();
@@ -328,11 +362,20 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 }
 
                 // insert typed character to screen
-                window.mvinsch(cursor.y as i32, (cursor.x + left_margin) as i32, c as chtype);
+                window.mvinsch(
+                    cursor.y as i32,
+                    (cursor.x + left_margin) as i32,
+                    c as chtype,
+                );
                 cursor.x += 1;
 
                 if let Some(widget) = find_widget_by_y_mut(model, current_level as i32) {
-                    if let Widget::Input { content: widget_content, label, .. } = widget {
+                    if let Widget::Input {
+                        content: widget_content,
+                        label,
+                        ..
+                    } = widget
+                    {
                         // insert same character into widget's content property
                         label_len = label.len();
                         widget_content.insert(cursor.x - label_len - 1, c);
@@ -346,7 +389,6 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     filter_widgets(model, filter, &content);
                     draw(window, model);
                 }
-                
             }
             _ => {}
         }

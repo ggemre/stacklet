@@ -22,7 +22,7 @@ impl FromStr for Filter {
 
 #[derive(Debug, Clone)]
 pub enum Widget {
-    Input { 
+    Input {
         y: i32,
         max_width: usize,
         filter: Filter,
@@ -31,11 +31,10 @@ pub enum Widget {
         content: String,
         id: usize,
     },
-    Text { 
+    Text {
         y: i32,
         content: String,
         show: bool,
         id: usize,
     },
 }
-

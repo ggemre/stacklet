@@ -1,6 +1,6 @@
-use std::process::{Command, exit};
 use crate::external::model::parse_stdout;
 use crate::Widget;
+use std::process::{exit, Command};
 
 use fork::{daemon, Fork};
 
@@ -9,7 +9,13 @@ use fork::{daemon, Fork};
 /// Takes a path for the executable and runs via `sh` with the provided runtime variables.
 /// Takes the stdout of the executable and passes to `external::model::parse_stdout` to generate the model
 /// and new runtime variables.
-pub fn run_executable(path: &str, input: &str, input_content: &str, selection: &str, data: &str) -> (Vec<Widget>, String) {
+pub fn run_executable(
+    path: &str,
+    input: &str,
+    input_content: &str,
+    selection: &str,
+    data: &str,
+) -> (Vec<Widget>, String) {
     let output = Command::new("sh")
         .arg("-c")
         .arg(&path)
