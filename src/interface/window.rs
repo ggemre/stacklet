@@ -194,8 +194,8 @@ fn wait_for_input(
     loop {
         let ch = window.getch();
         match ch {
-            | Some(Input::Character('\u{1b}')) => {
-                // escape pressed, exit loop and set program to quit
+            | Some(Input::Character('\u{09}') | Input::KeyClose | Input::KeyCancel | Input::KeySTab | Input::KeyCTab) => {
+                // tab pressed, exit loop and set program to quit
                 break_condition = BreakCondition::QUIT;
                 break;
             }
