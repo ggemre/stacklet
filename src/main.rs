@@ -5,7 +5,7 @@ mod external {
 }
 mod utils {
     pub mod args;
-    pub mod fuzzy;
+    pub mod filter;
     pub mod helpers;
 }
 mod interface {
@@ -29,8 +29,8 @@ fn main() {
         exit(0);
     } else {
         match args.exec_path() {
-            Some(path) => exec_path = (&path).to_string(),
-            None => {
+            | Some(path) => exec_path = (&path).to_string(),
+            | None => {
                 println!("Error: Missing required argument -x/--exec");
                 utils::args::print_help();
                 exit(1);
@@ -46,8 +46,13 @@ fn main() {
 
     loop {
         // run provided executable and collect ui model (from stdout) and generated data
-        let (mut model, new_data) =
-            external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
+        let (mut model, new_data) = external::exec::run_executable(
+            &exec_path,
+            &input,
+            &input_content,
+            &selection,
+            &data,
+        );
 
         if model.is_empty() {
             // no stdout, end the app loop
@@ -81,8 +86,8 @@ fn main() {
         input_content = model
             .iter()
             .filter_map(|widget| match widget {
-                Widget::Input { content, .. } => Some(content.clone()),
-                _ => None,
+                | Widget::Input { content, .. } => Some(content.clone()),
+                | _ => None,
             })
             .collect::<Vec<_>>()
             .join(":"); // TODO: pull out to configurable option

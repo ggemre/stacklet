@@ -27,7 +27,8 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
 
     // regex for widgets, see BNF form above
     let input_regex = Regex::new(r"INPUT\s*\((.*?)\)").unwrap();
-    let param_regex = Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
+    let param_regex =
+        Regex::new(r#"(\w+)\s*=\s*\"?([^\",]+)\"?,?\s*"#).unwrap();
     let text_regex = Regex::new(r#"TEXT\("(.*)"\)"#).unwrap();
     let data_regex = Regex::new(r#"DATA\("(.*)"\)"#).unwrap();
     let quit_regex = Regex::new(r#"QUIT\("([^"]*)"\)"#).unwrap();
@@ -52,17 +53,20 @@ pub fn parse_stdout(stdout: &str) -> (Vec<Widget>, String) {
 
                 // set parameter variable for each valid parameter
                 match param {
-                    "max_width" => max_width = value.parse().unwrap_or(32),
-                    "filter" => {
+                    | "max_width" => max_width = value.parse().unwrap_or(32),
+                    | "filter" => {
                         filter = value.parse().unwrap_or_else(|_| {
-                            eprintln!("Invalid filter value: {}", &value.to_string());
+                            eprintln!(
+                                "Invalid filter value: {}",
+                                &value.to_string()
+                            );
                             std::process::exit(1); // TODO: add error utils module
                         })
                     }
-                    "label" => label = value.to_string(),
-                    "placeholder" => placeholder = value.to_string(),
-                    "content" => content = value.to_string(),
-                    _ => {}
+                    | "label" => label = value.to_string(),
+                    | "placeholder" => placeholder = value.to_string(),
+                    | "content" => content = value.to_string(),
+                    | _ => {}
                 }
             }
 

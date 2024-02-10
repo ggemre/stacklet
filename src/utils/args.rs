@@ -35,9 +35,9 @@ pub fn parse_args() -> Args {
     let mut iter = args.iter().peekable();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
-            "-h" | "--help" => help = true,
-            "-v" | "--version" => version = true,
-            "-x" | "--exec" => {
+            | "-h" | "--help" => help = true,
+            | "-v" | "--version" => version = true,
+            | "-x" | "--exec" => {
                 // check if the next argument is available
                 if let Some(path) = iter.next() {
                     exec_path = Some(path.clone());
@@ -47,7 +47,7 @@ pub fn parse_args() -> Args {
                     std::process::exit(1);
                 }
             }
-            _ => {
+            | _ => {
                 println!("Error: Unknown argument '{}'", arg);
                 print_help();
                 std::process::exit(1);
