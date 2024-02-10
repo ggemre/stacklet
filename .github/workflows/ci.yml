@@ -1,0 +1,29 @@
+name: Rust Deploy
+
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Install dependencies
+      run: cargo fetch
+
+    - name: Format code
+      run: cargo fmt --all -- --check
+
+    - name: Run tests
+      run: cargo test
+
