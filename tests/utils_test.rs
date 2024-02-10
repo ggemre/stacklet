@@ -8,7 +8,7 @@ mod filter_test {
         assert!(exact_match("foo", "foo"));
         assert!(exact_match("<>!;;", "!;;"));
         assert!(exact_match("heart", "ear"));
-    } 
+    }
 
     #[test]
     fn exact_match_negative() {
@@ -22,7 +22,10 @@ mod filter_test {
     fn fuzzy_match_positive() {
         assert!(fuzzy_match("dogs and cats", "dgs n cts"));
         assert!(fuzzy_match("oython", "python"));
-        assert!(fuzzy_match("long sentence to search through", "swntemce to through"));
+        assert!(fuzzy_match(
+            "long sentence to search through",
+            "swntemce to through"
+        ));
         assert!(fuzzy_match("foobar", "foo..bAr.."));
     }
 
