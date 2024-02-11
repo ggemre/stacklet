@@ -1,6 +1,6 @@
 [package]
 name = "stacklet"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Generate custom applets and menus"
 repository = "https://github.com/ggemre/stacklet"
