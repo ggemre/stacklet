@@ -1,7 +1,7 @@
 extern crate pancurses;
 
 use crate::external::widget::{Filter, Widget};
-use crate::utils::fuzzy::{exact_match, fuzzy_match};
+use crate::utils::filter::{exact_match, fuzzy_match};
 use crate::utils::helpers::{find_widget_by_y, find_widget_by_y_mut};
 use pancurses::*;
 
@@ -65,7 +65,7 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
     window.clear();
     for widget in model {
         match widget {
-            Widget::Input {
+            | Widget::Input {
                 y, content, label, ..
             } => {
                 // input widget found, write it, its label and content, (both default to "")
@@ -76,12 +76,16 @@ fn draw(window: &Window, model: &mut Vec<Widget>) {
                 );
                 *y = current_level;
             }
-            Widget::Text {
+            | Widget::Text {
                 y, content, show, ..
             } => {
                 // text widget found, write its content if its show property is `true`
                 if *show {
-                    window.mvprintw(current_level, left_margin as i32, &content);
+                    window.mvprintw(
+                        current_level,
+                        left_margin as i32,
+                        &content,
+                    );
                     *y = current_level;
                 } else {
                     *y = -1;
@@ -105,8 +109,8 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
     // iterate through all widgets of given model
     for widget in model {
         match widget {
-            Widget::Input { .. } => {}
-            Widget::Text {
+            | Widget::Input { .. } => {}
+            | Widget::Text {
                 content: widget_content,
                 show,
                 ..
@@ -121,9 +125,13 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
                     continue;
                 } else if filter == Filter::Exact {
                     // filter is exact, hide/show widgets accordingly
-                    if *show && !exact_match(&widget_content_lower, &content_lower) {
+                    if *show
+                        && !exact_match(&widget_content_lower, &content_lower)
+                    {
                         *show = false;
-                    } else if !*show && exact_match(&widget_content_lower, &content_lower) {
+                    } else if !*show
+                        && exact_match(&widget_content_lower, &content_lower)
+                    {
                         *show = true;
                     }
                     continue;
@@ -155,7 +163,10 @@ fn filter_widgets(model: &mut Vec<Widget>, filter: Filter, content: &str) {
 /// - **Enter**: select current widget
 /// - **Arrow keys**: move cursor 1 character up/down/left/right
 /// - **Any other charcater**: type given character, (including backspace)
-fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, usize) {
+fn wait_for_input(
+    window: &Window,
+    model: &mut Vec<Widget>,
+) -> (BreakCondition, usize) {
     let mut cursor = Cursor { x: 0, y: 0 };
     reset_scroll_offset();
     let mut break_condition: BreakCondition;
@@ -168,7 +179,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
 
     draw(window, model);
 
-    if let Some(Widget::Input { content, label, .. }) = find_widget_by_y(model, cursor.y as i32) {
+    if let Some(Widget::Input { content, label, .. }) =
+        find_widget_by_y(model, cursor.y as i32)
+    {
         // starting widget is input, move cursor to end of its content
         cursor.x = content.len() + label.len();
     } else {
@@ -181,30 +194,40 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
     loop {
         let ch = window.getch();
         match ch {
-            Some(Input::Character('\u{1b}')) => {
-                // escape pressed, exit loop and set program to quit
+            | Some(
+                Input::Character('\u{09}')
+                | Input::KeyClose
+                | Input::KeyCancel
+                | Input::KeySTab
+                | Input::KeyCTab,
+            ) => {
+                // tab pressed, exit loop and set program to quit
                 break_condition = BreakCondition::QUIT;
                 break;
             }
-            Some(Input::KeyEnter) | Some(Input::Character('\n')) => {
+            | Some(Input::KeyEnter) | Some(Input::Character('\n')) => {
                 // enter/return pressed, prepare program to quit
                 break_condition = BreakCondition::QUIT;
 
                 for widget in model {
                     match widget {
-                        Widget::Input { y, id, .. } if *y == (cursor.y as i32) => {
+                        | Widget::Input { y, id, .. }
+                            if *y == (cursor.y as i32) =>
+                        {
                             // selected widget is input, set break condition and selected id
                             current_widget = *id;
                             break_condition = BreakCondition::INPUT;
                             break;
                         }
-                        Widget::Text { y, id, .. } if *y == (cursor.y as i32) => {
+                        | Widget::Text { y, id, .. }
+                            if *y == (cursor.y as i32) =>
+                        {
                             // selected widget is text, set break condition and selected id
                             current_widget = *id;
                             break_condition = BreakCondition::SELECTION;
                             break;
                         }
-                        _ => {
+                        | _ => {
                             break_condition = BreakCondition::QUIT;
                         }
                     }
@@ -213,7 +236,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 // conditions have been set, exit loop
                 break;
             }
-            Some(Input::KeyUp) => {
+            | Some(Input::KeyUp) => {
                 // up arrow pressed, move cursor up
                 if *get_scroll_offset() < 0 && cursor.y == 0 {
                     // cursor at top of window and widgets exist above cursor, scroll up
@@ -241,7 +264,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
             }
-            Some(Input::KeyDown) => {
+            | Some(Input::KeyDown) => {
                 // down arrow pressed, move cursor down
                 if cursor.y < limit {
                     // only move down if more widgets to scroll to
@@ -269,16 +292,17 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
             }
-            Some(Input::KeyLeft) => {
+            | Some(Input::KeyLeft) => {
                 // left arrow pressed, move cursor up to label 1 cell if row is input
-                if let Some(Widget::Input { label, .. }) = find_widget_by_y(model, cursor.y as i32)
+                if let Some(Widget::Input { label, .. }) =
+                    find_widget_by_y(model, cursor.y as i32)
                 {
                     if cursor.x > label.len() {
                         cursor.x -= 1;
                     }
                 }
             }
-            Some(Input::KeyRight) => {
+            | Some(Input::KeyRight) => {
                 // right arrow pressed, move cursor up to end to content 1 cell if row is input
                 if let Some(Widget::Input { content, label, .. }) =
                     find_widget_by_y(model, cursor.y as i32)
@@ -288,7 +312,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
             }
-            Some(Input::KeyBackspace) | Some(Input::KeyDC) | Some(Input::Character('\u{7f}')) => {
+            | Some(Input::KeyBackspace)
+            | Some(Input::KeyDC)
+            | Some(Input::Character('\u{7f}')) => {
                 // backspace/delete pressed
 
                 let mut content;
@@ -318,7 +344,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     window.mv(cursor.y as i32, (cursor.x + left_margin) as i32);
                     window.delch();
 
-                    if let Some(widget) = find_widget_by_y_mut(model, cursor.y as i32) {
+                    if let Some(widget) =
+                        find_widget_by_y_mut(model, cursor.y as i32)
+                    {
                         if let Widget::Input {
                             content: widget_content,
                             ..
@@ -339,7 +367,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     }
                 }
             }
-            Some(Input::Character(c)) => {
+            | Some(Input::Character(c)) => {
                 // any other character was typed
 
                 let mut content;
@@ -369,7 +397,9 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                 );
                 cursor.x += 1;
 
-                if let Some(widget) = find_widget_by_y_mut(model, current_level as i32) {
+                if let Some(widget) =
+                    find_widget_by_y_mut(model, current_level as i32)
+                {
                     if let Widget::Input {
                         content: widget_content,
                         label,
@@ -390,7 +420,7 @@ fn wait_for_input(window: &Window, model: &mut Vec<Widget>) -> (BreakCondition, 
                     draw(window, model);
                 }
             }
-            _ => {}
+            | _ => {}
         }
 
         window.mv(cursor.y as i32, (cursor.x + left_margin) as i32);

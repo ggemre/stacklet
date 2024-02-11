@@ -12,10 +12,10 @@ impl FromStr for Filter {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "off" => Ok(Filter::Off),
-            "exact" => Ok(Filter::Exact),
-            "fuzzy" => Ok(Filter::Fuzzy),
-            _ => Err(()),
+            | "off" => Ok(Filter::Off),
+            | "exact" => Ok(Filter::Exact),
+            | "fuzzy" => Ok(Filter::Fuzzy),
+            | _ => Err(()),
         }
     }
 }

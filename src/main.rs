@@ -1,38 +1,27 @@
-mod external {
-    pub mod exec;
-    pub mod model;
-    pub mod widget;
-}
-mod utils {
-    pub mod args;
-    pub mod fuzzy;
-    pub mod helpers;
-}
-mod interface {
-    pub mod window;
-}
-use crate::external::widget::Widget;
-use crate::interface::window::BreakCondition;
+use stacklet::external::exec;
+use stacklet::external::widget::Widget;
+use stacklet::interface::window::{destroy, init, BreakCondition};
+use stacklet::utils::args;
 use std::process::exit;
 
 /// Entry point for the program.
 fn main() {
     // parse commandline arguments
-    let args = utils::args::parse_args();
+    let args = args::parse_args();
     let exec_path: String;
 
     if args.help() {
-        utils::args::print_help();
+        args::print_help();
         exit(0);
     } else if args.version() {
-        utils::args::print_version();
+        args::print_version();
         exit(0);
     } else {
         match args.exec_path() {
-            Some(path) => exec_path = (&path).to_string(),
-            None => {
+            | Some(path) => exec_path = (&path).to_string(),
+            | None => {
                 println!("Error: Missing required argument -x/--exec");
-                utils::args::print_help();
+                args::print_help();
                 exit(1);
             }
         }
@@ -46,8 +35,13 @@ fn main() {
 
     loop {
         // run provided executable and collect ui model (from stdout) and generated data
-        let (mut model, new_data) =
-            external::exec::run_executable(&exec_path, &input, &input_content, &selection, &data);
+        let (mut model, new_data) = exec::run_executable(
+            &exec_path,
+            &input,
+            &input_content,
+            &selection,
+            &data,
+        );
 
         if model.is_empty() {
             // no stdout, end the app loop
@@ -59,7 +53,7 @@ fn main() {
             data = new_data;
         }
 
-        let (break_condition, match_id) = interface::window::init(&mut model);
+        let (break_condition, match_id) = init(&mut model);
 
         if break_condition == BreakCondition::SELECTION {
             // user clicked on a text widget, set selection runtime variable for next execution
@@ -81,12 +75,12 @@ fn main() {
         input_content = model
             .iter()
             .filter_map(|widget| match widget {
-                Widget::Input { content, .. } => Some(content.clone()),
-                _ => None,
+                | Widget::Input { content, .. } => Some(content.clone()),
+                | _ => None,
             })
             .collect::<Vec<_>>()
             .join(":"); // TODO: pull out to configurable option
     }
 
-    interface::window::destroy();
+    destroy();
 }
