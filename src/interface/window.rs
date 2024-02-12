@@ -206,35 +206,24 @@ fn wait_for_input(
                 break;
             }
             | Some(Input::KeyEnter) | Some(Input::Character('\n')) => {
-                // enter/return pressed, prepare program to quit
-                break_condition = BreakCondition::QUIT;
-
-                for widget in model {
-                    match widget {
-                        | Widget::Input { y, id, .. }
-                            if *y == (cursor.y as i32) =>
-                        {
-                            // selected widget is input, set break condition and selected id
-                            current_widget = *id;
-                            break_condition = BreakCondition::INPUT;
-                            break;
-                        }
-                        | Widget::Text { y, id, .. }
-                            if *y == (cursor.y as i32) =>
-                        {
-                            // selected widget is text, set break condition and selected id
-                            current_widget = *id;
-                            break_condition = BreakCondition::SELECTION;
-                            break;
-                        }
-                        | _ => {
-                            break_condition = BreakCondition::QUIT;
-                        }
+                if let Some(Widget::Input { id, selectable, .. }) =
+                    find_widget_by_y(model, cursor.y as i32)
+                {
+                    if *selectable {
+                        current_widget = *id;
+                        break_condition = BreakCondition::INPUT;
+                        break;
                     }
                 }
-
-                // conditions have been set, exit loop
-                break;
+                if let Some(Widget::Text { id, selectable, .. }) =
+                    find_widget_by_y(model, cursor.y as i32)
+                {
+                    if *selectable {
+                        current_widget = *id;
+                        break_condition = BreakCondition::SELECTION;
+                        break;
+                    }
+                }
             }
             | Some(Input::KeyUp) => {
                 // up arrow pressed, move cursor up
@@ -372,28 +361,33 @@ fn wait_for_input(
 
                 let mut content;
                 let filter;
+                let hidden;
                 let current_level = cursor.y;
                 let mut label_len = 0;
 
                 if let Some(Widget::Input {
                     content: ref_content,
                     filter: ref_filter,
+                    hidden: ref_hidden,
                     ..
                 }) = find_widget_by_y(model, cursor.y as i32).cloned()
                 {
                     // current row is input, get its content and filter type
                     content = ref_content.clone();
                     filter = ref_filter.clone();
+                    hidden = ref_hidden.clone();
                 } else {
                     // current row is text, nothing to type so skip
                     continue;
                 }
 
+                let display_char = if hidden { '*' } else { c };
+
                 // insert typed character to screen
                 window.mvinsch(
                     cursor.y as i32,
                     (cursor.x + left_margin) as i32,
-                    c as chtype,
+                    display_char as chtype,
                 );
                 cursor.x += 1;
 

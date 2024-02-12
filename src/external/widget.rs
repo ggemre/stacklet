@@ -24,16 +24,17 @@ impl FromStr for Filter {
 pub enum Widget {
     Input {
         y: i32,
-        max_width: usize,
         filter: Filter,
         label: String,
-        placeholder: String,
         content: String,
+        selectable: bool,
+        hidden: bool,
         id: usize,
     },
     Text {
         y: i32,
         content: String,
+        selectable: bool,
         show: bool,
         id: usize,
     },
