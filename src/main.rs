@@ -53,6 +53,22 @@ fn main() {
             data = new_data;
         }
 
+        // for widget in model {
+        //     match widget {
+        //         | Widget::Input {
+        //             y, selectable, ..
+        //         } => {
+        //             println!("{}", selectable);
+        //         }
+        //         | Widget::Text {
+        //             y, selectable, ..
+        //         } => {
+        //             println!("{}", selectable);
+        //         }
+        //     }
+        // }
+        // exit(1);
+
         let (break_condition, match_id) = init(&mut model);
 
         if break_condition == BreakCondition::SELECTION {
